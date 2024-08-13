@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>管理系統</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            text-align: center;
+            width: 450px;
+            max-width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 32px;
+            font-weight: 700;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        input, button {
+            font-size: 18px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            width: calc(100% - 22px); /* 避免超出容器 */
+        }
+        button {
+            background-color: #28a745; /* 綠色背景 */
+            color: #ffffff; /* 白色文字 */
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .info-box {
+            background-color: #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+            border: 1px solid #dee2e6;
+        }
+        .info-box div {
+            margin-bottom: 10px;
+        }
+        .form-group input::placeholder {
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>管理系統</h1>
+
+        <!-- 顯示目前掛號資訊 -->
+        <div class="info-box">
+            <div><strong>目前號碼：</strong><span id="display-current-number">--</span></div>
+            <div><strong>候診人數：</strong><span id="display-waiting-count">0</span></div>
+            <div><strong>你的號碼：</strong><span id="display-your-number">--</span></div>
+        </div>
+
+        <!-- 手動輸入區 -->
+        <div class="form-group">
+            <label for="current-number">設定目前號碼：</label>
+            <input type="number" id="current-number" placeholder="輸入目前號碼" value="--">
+        </div>
+        <div class="form-group">
+            <label for="waiting-count">設定候診人數：</label>
+            <input type="number" id="waiting-count" placeholder="輸入候診人數" value="0">
+        </div>
+
+        <!-- 操作按鈕 -->
+        <button onclick="updateNumbers()">更新</button>
+        <button onclick="resetAll()">歸零</button>
+        <button onclick="nextNumber()">下一位</button>
+        <button onclick="addNumber()">掛入號碼</button>
+    </div>
+
+    <script>
+        let isSpeaking = false; // 標記是否正在說話
+
+        // 初始化顯示
+        window.onload = function() {
+            const currentNumber = localStorage.getItem('currentNumber') || '0';
+            const waitingCount = localStorage.getItem('waitingCount') || '0';
+            const yourNumber = localStorage.getItem('yourNumber') || '--';
+
+            document.getElementById('current-number').value = currentNumber;
+            document.getElementById('waiting-count').value = waitingCount;
+
+            document.getElementById('display-current-number').innerText = currentNumber;
+            document.getElementById('display-waiting-count').innerText = waitingCount;
+            document.getElementById('display-your-number').innerText = yourNumber;
+        };
+
+        function updateNumbers() {
+            const currentNumber = document.getElementById('current-number').value || '0';
+            const waitingCount = document.getElementById('waiting-count').value || '0';
+
+            localStorage.setItem('currentNumber', currentNumber);
+            localStorage.setItem('waitingCount', waitingCount);
+
+            // 更新顯示的資訊
+            document.getElementById('display-current-number').innerText = currentNumber;
+            document.getElementById('display-waiting-count').innerText = waitingCount;
+
+            // 清空手動輸入欄位
+            document.getElementById('current-number').value = '0';
+            document.getElementById('waiting-count').value = '0';
+        }
+
+        function speakNumber(number) {
+            if (isSpeaking) return; // 如果正在說話，則不再說話
+
+            isSpeaking = true;
+            const message = `你的號碼是 ${number}`;
+            const speech = new SpeechSynthesisUtterance(message);
+            speech.lang = 'zh-TW'; // 設置語言為中文
+            speech.onend = () => {
+                isSpeaking = false; // 說話結束後重置標記
+            };
+            window.speechSynthesis.speak(speech);
+        }
+
+        function resetAll() {
+            localStorage.setItem('currentNumber', '0'); // 設定為 0
+            localStorage.setItem('waitingCount', '0');
+            localStorage.setItem('yourNumber', '--');
+            isSpeaking = false; // 清除語音標記
+
+            // 更新顯示的資訊
+            document.getElementById('display-current-number').innerText = '0';
+            document.getElementById('display-waiting-count').innerText = '0';
+            document.getElementById('display-your-number').innerText = '--';
+
+            // 清空手動輸入欄位
+            document.getElementById('current-number').value = '0';
+            document.getElementById('waiting-count').value = '0';
+
+            alert('系統已歸零！');
+        }
+
+        function nextNumber() {
+            let currentNumber = parseInt(localStorage.getItem('currentNumber')) || 0;
+
+            // 確保號碼為單數
+            if (isNaN(currentNumber) || currentNumber % 2 === 0) {
+                currentNumber = 1;
+            } else {
+                currentNumber += 2; // 每次按加 2 以確保始終是單數
+            }
+
+            const waitingCount = parseInt(localStorage.getItem('waitingCount')) || 0;
+            localStorage.setItem('currentNumber', currentNumber);
+            localStorage.setItem('waitingCount', waitingCount - 1); // 候診人數 - 1
+
+            // 更新顯示的資訊
+            document.getElementById('display-current-number').innerText = currentNumber;
+            document.getElementById('display-waiting-count').innerText = waitingCount - 1;
+
+            alert('已更新至下一位！');
+        }
+
+        function addNumber() {
+            let yourNumber = parseInt(localStorage.getItem('yourNumber')) || 0;
+
+            // 如果 'yourNumber' 為 0 或未設定，則設為 1
+            if (yourNumber === 0) {
+                yourNumber = 1;
+            } else {
+                yourNumber += 2; // 每次按加 2
+            }
+
+            // 更新 'yourNumber' 並增加候診人數
+            localStorage.setItem('yourNumber', yourNumber);
+            const waitingCount = parseInt(localStorage.getItem('waitingCount')) || 0;
+            localStorage.setItem('waitingCount', waitingCount + 1); // 候診人數 + 1
+
+            // 更新顯示的資訊
+            document.getElementById('display-your-number').innerText = yourNumber;
+
+            // 顯示號碼並說出號碼
+            alert(`已掛入號碼 ${yourNumber}！`);
+            speakNumber(yourNumber); // 說出號碼
+        }
+    </script>
+</body>
+</html>
